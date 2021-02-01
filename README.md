@@ -3,7 +3,7 @@ Some code to set a manual IP/DHCP for dhcpcd (as used on the raspberry pi)
 
 usage
 
-```buildoutcfg
+```python
 from lib.ip import *
 
 ip = dhcpcdManager()
