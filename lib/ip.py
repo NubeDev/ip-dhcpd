@@ -1,11 +1,13 @@
 import subprocess
 import re
 import time
+from ipaddress import IPv4Network
 
 
 class dhcpcdManager:
     def __init__(self):
-        self._filePath = '/etc/dhcpcd.conf'
+        self._filePath = 'lib/test.dhcpcd.conf'
+        # self._filePath = '/etc/dhcpcd.conf'
 
         with open(self._filePath, 'r') as fp:
             self._lines = fp.readlines()
@@ -40,20 +42,22 @@ class dhcpcdManager:
         return -1
 
     def set_static_info(self, interface: str, ip_address: str, routers: str, domain_name_server: str,
-                        netmask: str) -> int:
+                        netmask: str) -> list:
         try:
+            debug = None
             iface_index = self.find_interface_line(interface)
-            netmask_number = sum([bin(int(x)).count('1') for x in netmask.split('.')])
-
+            netmask_number = IPv4Network(f"0.0.0.0/{netmask}").prefixlen
             if iface_index != -1:
                 ip_index = self.find_ip_line(iface_index)
                 routers_index = self.find_routers_line(iface_index)
                 dns_index = self.find_dns_line(iface_index)
+                debug = "iface_index"
 
                 if ip_index != -1 and routers_index != -1 and dns_index != -1:
                     self._lines[ip_index] = 'static ip_address=' + ip_address + '/' + str(netmask_number) + '\n'
                     self._lines[routers_index] = 'static routers=' + routers + '\n'
                     self._lines[dns_index] = 'static domain_name_servers=' + domain_name_server + '\n'
+                    debug = "ip_index"
             else:
                 if self._lines[len(self._lines) - 1] != '\n':
                     self._lines.append('\n')
@@ -61,14 +65,15 @@ class dhcpcdManager:
                 self._lines.append('static ip_address=' + ip_address + '/' + str(netmask_number) + '\n')
                 self._lines.append('static routers=' + routers + '\n')
                 self._lines.append('static domain_name_servers=' + domain_name_server + '\n')
+                debug = "else"
 
             with open(self._filePath, 'w') as fp:
                 for line in self._lines:
                     fp.write(line)
 
-            return 0
+            return [0, debug, iface_index]
         except:
-            return -1
+            return [-1, debug, iface_index]
 
     def remove_static_info(self, interface: str) -> int:
         try:
